@@ -18,6 +18,8 @@ wandb login
 accelerate config
 ```
 After everything setup, just launch the whole process with:
+
+(if the download link is expired, please refer to https://github.com/Hannibal046/nanoColBERT/issues/5, https://github.com/Hannibal046/nanoColBERT/issues/2)
 ```bash
 bash scripts/download.sh
 bash scripts/run_colbert.sh
