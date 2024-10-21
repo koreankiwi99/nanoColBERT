@@ -1,25 +1,24 @@
 ## data
-query_data_path: data/processed/queries.mmap
-pos_doc_data_path: data/processed/pos_docs.mmap
-neg_doc_data_path: data/processed/neg_docs.mmap
-num_samples: 39780811
+query_data_path: ./mmap/queries.mmap #revised
+pos_doc_data_path: ./mmap/pos_docs.mmap
+neg_doc_data_path: ./mmap/neg_docs.mmap
+num_samples: 21875 #revised
 
 ## model
 similarity_metric: l2
 dim: 128
-query_max_len: 32
-doc_max_len: 180
+query_max_len: 32 #TODO
+doc_max_len: 180 #TODO
 mask_punctuation: true
 
-
 ## training
-base_model: bert-base-uncased
+base_model: google-bert/bert-base-multilingual-uncased
 per_device_train_batch_size: 32
 weight_decay: 0.0
 lr: 3.0e-06
-max_train_steps: 400000
+max_train_steps: 4000 #TODO
 seed: 12345
 gradient_accumulation_steps: 1
-val_check_interval: 4000
-fp16: true
+val_check_interval: 100
+fp16: false
 shuffle_train_set: false ## colbertv1 didn't shuffle
