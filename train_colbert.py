@@ -33,10 +33,10 @@ def set_seed(seed: int = 19980406):
     torch.cuda.manual_seed_all(seed)
 
 def get_yaml_file(file_path):
-    import yaml  
-    with open(file_path, "r") as file:  
-        config = yaml.safe_load(file)  
-    return config  
+    import yaml
+    with open(file_path, "r") as file:
+        config = yaml.safe_load(file)
+    return config
 
 def parse_args():
     import argparse
@@ -51,16 +51,15 @@ def parse_args():
     args = types.SimpleNamespace(**yaml_config)
     return args
 
-
 class MSMarcoDataset(torch.utils.data.Dataset):
     def __init__(self,query_data_path,pos_doc_data_path,neg_doc_data_path,
                  query_max_len,doc_max_len,num_samples,
                  ):
-        self.queries  = np.memmap(query_data_path,  dtype=np.int16, mode='r', shape=(num_samples,query_max_len))  
+        self.queries  = np.memmap(query_data_path,  dtype=np.int16, mode='r', shape=(num_samples,query_max_len))
         self.pos_docs = np.memmap(pos_doc_data_path,dtype=np.int16, mode='r', shape=(num_samples,doc_max_len))
         self.neg_docs = np.memmap(neg_doc_data_path,dtype=np.int16, mode='r', shape=(num_samples,doc_max_len))
-        self.num_samples = num_samples  
-    
+        self.num_samples = num_samples
+
     def __len__(self):
         return self.num_samples
 
@@ -110,7 +109,7 @@ def main():
     )
 
     accelerator.init_trackers(
-        project_name="colbert", 
+        project_name="colbert",
         config=args,
     )
     if accelerator.is_local_main_process:
@@ -130,11 +129,12 @@ def main():
     colbert_config = ColBERTConfig(
         dim = args.dim,
         similarity_metric = args.similarity_metric,
-        mask_punctuation = args.mask_punctuation, 
+        mask_punctuation = args.mask_punctuation,
     )
     colbert = ColBERT.from_pretrained(
         args.base_model,
         config = colbert_config,
+        ignore_mismatched_sizes=True
         )
     colbert.resize_token_embeddings(len(tokenizer))
     colbert.train()
@@ -155,8 +155,8 @@ def main():
         num_workers=4,pin_memory=True
         )
     ## there is no dev/test dataloader. Original ColBERT just optimize fixed steps
-    
-    
+
+
     no_decay = ["bias", "LayerNorm.weight"]
     optimizer_grouped_parameters = [
         {
@@ -169,13 +169,13 @@ def main():
         },
     ]
     optimizer = torch.optim.AdamW(optimizer_grouped_parameters,lr=args.lr)
-    
+
     colbert, optimizer, train_dataloader = accelerator.prepare(
         colbert, optimizer, train_dataloader,
     )
 
     loss_fct = nn.CrossEntropyLoss()
-    
+
     NUM_UPDATES_PER_EPOCH = math.ceil(len(train_dataloader) / args.gradient_accumulation_steps)
     MAX_TRAIN_STEPS = args.max_train_steps
     MAX_TRAIN_EPOCHS = math.ceil(MAX_TRAIN_STEPS / NUM_UPDATES_PER_EPOCH)
@@ -203,7 +203,7 @@ def main():
                 with accelerator.autocast():
                     scores  = colbert(**batch).view(2,-1).permute(1,0) #[per_device_train_batch_size,2]
                     ## since we always put positive docs before neg docs, check collate_fn
-                    labels = torch.zeros(scores.shape[0], dtype=torch.long, device=scores.device) 
+                    labels = torch.zeros(scores.shape[0], dtype=torch.long, device=scores.device)
                     loss = loss_fct(scores,labels)
                     total_loss += loss.item()
                 accelerator.backward(loss)
@@ -217,16 +217,16 @@ def main():
                     accelerator.log({"average_loss": total_loss/completed_steps}, step=completed_steps)
                     progress_bar_postfix_dict.update(dict(loss=f"{total_loss/completed_steps:.4f}"))
                     progress_bar.set_postfix(progress_bar_postfix_dict)
-                    
+
                     if completed_steps % EVAL_STEPS == 0:
                         if accelerator.is_local_main_process:
                             unwrapped_model = accelerator.unwrap_model(colbert)
                             unwrapped_model.save_pretrained(os.path.join(LOG_DIR,f"step-{completed_steps}"))
                             tokenizer.save_pretrained(os.path.join(LOG_DIR,f"step-{completed_steps}"))
                         accelerator.wait_for_everyone()
-                    
+
                     if completed_steps > MAX_TRAIN_STEPS: break
-    
+
     if accelerator.is_local_main_process:wandb_tracker.finish()
     accelerator.end_training()
 
