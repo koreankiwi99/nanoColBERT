@@ -6,6 +6,7 @@ os.environ["TOKENIZERS_PARALLELISM"] = "false"
 # transformers.logging.set_verbosity_error()
 from transformers import BertTokenizer
 import torch
+import json
 from accelerate import PartialState
 from model import ColBERT
 
@@ -13,7 +14,7 @@ if __name__ == "__main__":
 
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument("--collection_path",default="data/collection.tsv")
+    parser.add_argument("--collection_path", required=True)
     parser.add_argument("--encoding_batch_size",type=int,default=1024)
     parser.add_argument("--max_doclen",type=int,default=180)
     parser.add_argument("--pretrained_model_path",required=True)
@@ -28,36 +29,25 @@ if __name__ == "__main__":
     colbert.eval()
     colbert.to(device)
     tokenizer = BertTokenizer.from_pretrained(args.pretrained_model_path,use_fast=False)
-    
-    collections = []
-    with open(args.collection_path) as f:
-        for line in f:
-            line_parts = line.strip().split("\t") 
-            pid, passage, *other = line_parts
-            assert len(passage) >= 1
 
-            if len(other) >= 1:
-                title, *_ = other
-                passage = title + " | " + passage
-            
-            collections.append(passage)
+    with open(args.collection_path, 'r') as f:
+      collections = [doc['text'] for doc in json.load(f)]
 
     with distributed_state.split_between_processes(collections) as sharded_collections:
-        
         sharded_collections = [sharded_collections[idx:idx+args.encoding_batch_size] for idx in range(0,len(sharded_collections),args.encoding_batch_size)]
         encoding_progress_bar = tqdm(total=len(sharded_collections), disable=not distributed_state.is_main_process,ncols=100,desc='encoding collections...')
-        
+
         os.makedirs(args.output_dir,exist_ok=True)
         shard_id = 0
         doc_embeddings = []
         doc_embeddings_lengths = []
-        
+
         for docs in sharded_collections:
             docs = ["[D] "+doc for doc in docs]
             model_input = tokenizer(docs,max_length=args.max_doclen,padding='max_length',return_tensors='pt',truncation=True).to(device)
             input_ids = model_input.input_ids
             attention_mask = model_input.attention_mask
-            
+
             with torch.no_grad():
                 doc_embedding = colbert.get_doc_embedding(
                     input_ids = input_ids,
@@ -72,7 +62,7 @@ if __name__ == "__main__":
             encoding_progress_bar.update(1)
 
             if len(doc_embeddings) >= args.max_embedding_num_per_shard:
-                doc_embeddings = torch.cat(doc_embeddings,dim=0)   
+                doc_embeddings = torch.cat(doc_embeddings,dim=0)
                 torch.save(doc_embeddings,f'{args.output_dir}/collection_shard_{distributed_state.process_index}_{shard_id}.pt')
                 pickle.dump(doc_embeddings_lengths,open(f"{args.output_dir}/length_shard_{distributed_state.process_index}_{shard_id}.pkl",'wb'))
 
