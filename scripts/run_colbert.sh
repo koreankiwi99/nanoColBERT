@@ -10,7 +10,7 @@ python train_colbert.py
 ## using trained model to produce document embedding
 accelerate launch doc2embedding.py \
     --pretrained_model_path wandb/latest-run/files/step-4000 \ #TODO
-    --output_dir embedding/colbert
+    --output_dir embedding/colbert \
     --collection_path corpus.json #TODO
 
 ## build faiss index for efficient retrieval
