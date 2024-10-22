@@ -1,4 +1,5 @@
 import faiss
+import faiss.contrib.torch_utils
 import argparse
 import os
 from tqdm import tqdm
