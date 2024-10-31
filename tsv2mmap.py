@@ -24,7 +24,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--base_model", default="google-bert/bert-base-multilingual-uncased")
     parser.add_argument("--query_max_len",type=int,default=32)
-    parser.add_argument("--doc_max_len",type=int,default=180)
+    parser.add_argument("--doc_max_len",type=int,default=200)
     parser.add_argument("--triple_path", required=True)
     parser.add_argument("--batch_size",type=int,default=10_000)
     parser.add_argument("--save_dir", default="./mmap/")
@@ -46,9 +46,9 @@ if __name__ == "__main__":
         }
     )
     os.makedirs(args.save_dir,exist_ok=True)
-    query_mmap = np.memmap(os.path.join(args.save_dir,'queries.mmap'), dtype='int16',mode='w+',shape=(num_samples,query_max_len))
-    pos_mmap   = np.memmap(os.path.join(args.save_dir,'pos_docs.mmap'),dtype='int16',mode='w+',shape=(num_samples,doc_max_len))
-    neg_mmap   = np.memmap(os.path.join(args.save_dir,'neg_docs.mmap'),dtype='int16',mode='w+',shape=(num_samples,doc_max_len))
+    query_mmap = np.memmap(os.path.join(args.save_dir,'queries.mmap'), dtype='float32',mode='w+',shape=(num_samples,query_max_len))
+    pos_mmap   = np.memmap(os.path.join(args.save_dir,'pos_docs.mmap'),dtype='float32',mode='w+',shape=(num_samples,doc_max_len))
+    neg_mmap   = np.memmap(os.path.join(args.save_dir,'neg_docs.mmap'),dtype='float32',mode='w+',shape=(num_samples,doc_max_len))
 
     total = 0
     progress_bar = tqdm(range(num_samples),desc='processing triplet data...')
@@ -76,9 +76,9 @@ if __name__ == "__main__":
         current_size = len(queries)
         query_input_ids,pos_input_ids,neg_input_ids = process_triplet(queries,poses,negs)
 
-        query_mmap[total:total+current_size] = query_input_ids.numpy().astype(np.int16)
-        pos_mmap[total:total+current_size] = pos_input_ids.numpy().astype(np.int16)
-        neg_mmap[total:total+current_size] = neg_input_ids.numpy().astype(np.int16)
+        query_mmap[total:total+current_size] = query_input_ids.numpy().astype(np.float32)
+        pos_mmap[total:total+current_size] = pos_input_ids.numpy().astype(np.float32)
+        neg_mmap[total:total+current_size] = neg_input_ids.numpy().astype(np.float32)
         progress_bar.update(len(queries))
         assert current_size + total == num_samples
 
