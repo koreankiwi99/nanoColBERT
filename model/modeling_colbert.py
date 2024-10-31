@@ -8,6 +8,8 @@ from transformers import (
 )
 import string
 
+torch.set_float32_matmul_precision("high")
+
 class ColBERT(BertPreTrainedModel):
     def __init__(self,config):
         super().__init__(config)
