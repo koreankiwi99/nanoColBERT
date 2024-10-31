@@ -12,7 +12,7 @@ doc_max_len: 180 #TODO
 mask_punctuation: true
 
 ## training
-base_model: google-bert/bert-base-multilingual-uncased
+base_model: google-bert/bert-base-uncased
 per_device_train_batch_size: 32
 weight_decay: 0.0
 lr: 3.0e-06
@@ -20,5 +20,4 @@ max_train_steps: 4000 #TODO
 seed: 12345
 gradient_accumulation_steps: 1
 val_check_interval: 100
-fp16: false
 shuffle_train_set: false ## colbertv1 didn't shuffle
