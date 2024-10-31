@@ -105,7 +105,7 @@ def main():
     accelerator = Accelerator(
         gradient_accumulation_steps=args.gradient_accumulation_steps,
         log_with='wandb',
-        mixed_precision='fp16' if args.fp16 else 'no',
+        mixed_precision='no',
     )
 
     accelerator.init_trackers(
