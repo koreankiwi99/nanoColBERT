@@ -46,9 +46,9 @@ if __name__ == "__main__":
         }
     )
     os.makedirs(args.save_dir,exist_ok=True)
-    query_mmap = np.memmap(os.path.join(args.save_dir,'queries.mmap'), dtype='float32',mode='w+',shape=(num_samples,query_max_len))
-    pos_mmap   = np.memmap(os.path.join(args.save_dir,'pos_docs.mmap'),dtype='float32',mode='w+',shape=(num_samples,doc_max_len))
-    neg_mmap   = np.memmap(os.path.join(args.save_dir,'neg_docs.mmap'),dtype='float32',mode='w+',shape=(num_samples,doc_max_len))
+    query_mmap = np.memmap(os.path.join(args.save_dir,'queries.mmap'), dtype='int16',mode='w+',shape=(num_samples,query_max_len))
+    pos_mmap   = np.memmap(os.path.join(args.save_dir,'pos_docs.mmap'),dtype='int16',mode='w+',shape=(num_samples,doc_max_len))
+    neg_mmap   = np.memmap(os.path.join(args.save_dir,'neg_docs.mmap'),dtype='int16',mode='w+',shape=(num_samples,doc_max_len))
 
     total = 0
     progress_bar = tqdm(range(num_samples),desc='processing triplet data...')
