@@ -18,7 +18,7 @@ class ColBERT(BertPreTrainedModel):
         self.similarity_metric= config.similarity_metric
         self.mask_punctuation = config.mask_punctuation
 
-        tokenizer = BertTokenizerFast.from_pretrained("google-bert/bert-base-multilingual-uncased") #TODO
+        tokenizer = BertTokenizerFast.from_pretrained("google-bert/bert-base-uncased") #TODO
         mask_symbol_list = [tokenizer.pad_token_id]
         if self.mask_punctuation:
             mask_symbol_list += [tokenizer.encode(symbol,add_special_tokens=False)[0] for symbol in string.punctuation]
